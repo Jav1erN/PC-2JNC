@@ -1,0 +1,24 @@
+@PC_2JNC_HostAddress = http://localhost:5087
+
+POST {{PC_2JNC_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+###
+
+GET {{PC_2JNC_HostAddress}}/api/orders/ej1
+Accept: application/json
+
+###
+
+GET {{PC_2JNC_HostAddress}}/api/orders/pedidos/1/detalles
+Accept: application/json
+
+###
+
+GET {{PC_2JNC_HostAddress}}/api/orders/reportes/ventas-por-cliente
+Accept: application/json
