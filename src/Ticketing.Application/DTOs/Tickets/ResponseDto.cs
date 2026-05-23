@@ -1,0 +1,3 @@
+namespace Ticketing.Application.DTOs.Tickets;
+
+public sealed record ResponseDto(Guid ResponseId, Guid TicketId, Guid ResponderId, string ResponderUsername, string Message, DateTime CreatedAt);
