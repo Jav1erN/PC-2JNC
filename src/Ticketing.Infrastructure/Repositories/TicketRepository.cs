@@ -14,18 +14,25 @@ public sealed class TicketRepository : ITicketRepository
         _dbContext = dbContext;
     }
 
-    public Task<Ticket?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default)
+    public Task<Ticket?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default, bool asNoTracking = false)
     {
-        return _dbContext.Tickets
+        IQueryable<Ticket> query = _dbContext.Tickets
             .Include(ticket => ticket.User)
             .Include(ticket => ticket.Responses)
-            .ThenInclude(response => response.Responder)
-            .FirstOrDefaultAsync(ticket => ticket.TicketId == ticketId, cancellationToken);
+            .ThenInclude(response => response.Responder);
+
+        if (asNoTracking)
+        {
+            query = query.AsNoTracking();
+        }
+
+        return query.FirstOrDefaultAsync(ticket => ticket.TicketId == ticketId, cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<Ticket>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _dbContext.Tickets
+            .AsNoTracking()
             .Include(ticket => ticket.User)
             .Include(ticket => ticket.Responses)
             .ThenInclude(response => response.Responder)

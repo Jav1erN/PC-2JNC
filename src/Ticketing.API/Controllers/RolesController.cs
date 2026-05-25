@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Ticketing.Application.DTOs.Roles;
-using Ticketing.Application.UseCases.Roles;
+using MediatR;
+using Ticketing.Application.RoleUseCases.Commands;
+using Ticketing.Application.RoleUseCases.DTOs;
+using Ticketing.Application.RoleUseCases.Queries;
 
 namespace Ticketing.API.Controllers;
 
@@ -10,22 +12,25 @@ namespace Ticketing.API.Controllers;
 [Authorize(Roles = "Admin")]
 public sealed class RolesController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public RolesController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<RoleDto>>> GetAll(
-        [FromServices] GetAllRolesUseCase useCase,
+    public async Task<IReadOnlyCollection<RoleDto>> GetAll(
         CancellationToken cancellationToken)
     {
-        var roles = await useCase.ExecuteAsync(cancellationToken);
-        return Ok(roles);
+        return await _mediator.Send(new GetAllRolesQuery(), cancellationToken);
     }
 
     [HttpPost("assign")]
-    public async Task<IActionResult> AssignToUser(
-        [FromBody] AssignRoleRequest request,
-        [FromServices] AssignRoleToUserUseCase useCase,
+    public async Task<Unit> AssignToUser(
+        [FromBody] AssignRoleToUserCommand command,
         CancellationToken cancellationToken)
     {
-        await useCase.ExecuteAsync(request, cancellationToken);
-        return NoContent();
+        return await _mediator.Send(command, cancellationToken);
     }
 }

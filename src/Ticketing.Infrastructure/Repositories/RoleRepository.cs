@@ -26,7 +26,10 @@ public sealed class RoleRepository : IRoleRepository
 
     public async Task<IReadOnlyCollection<Role>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Roles.OrderBy(role => role.RoleName).ToArrayAsync(cancellationToken);
+        return await _dbContext.Roles
+            .AsNoTracking()
+            .OrderBy(role => role.RoleName)
+            .ToArrayAsync(cancellationToken);
     }
 
     public Task AddAsync(Role role, CancellationToken cancellationToken = default)

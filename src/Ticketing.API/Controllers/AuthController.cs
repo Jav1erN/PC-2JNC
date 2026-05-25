@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Ticketing.Application.DTOs.Auth;
-using Ticketing.Application.UseCases.Auth;
+using MediatR;
+using Ticketing.Application.UserUseCases.Commands;
+using Ticketing.Application.UserUseCases.DTOs;
 
 namespace Ticketing.API.Controllers;
 
@@ -10,23 +11,26 @@ namespace Ticketing.API.Controllers;
 [AllowAnonymous]
 public sealed class AuthController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public AuthController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpPost("register")]
-    public async Task<ActionResult<AuthResponse>> Register(
-        [FromBody] RegisterUserRequest request,
-        [FromServices] RegisterUserUseCase useCase,
+    public async Task<AuthResponse> Register(
+        [FromBody] RegisterUserCommand command,
         CancellationToken cancellationToken)
     {
-        var response = await useCase.ExecuteAsync(request, cancellationToken);
-        return Ok(response);
+        return await _mediator.Send(command, cancellationToken);
     }
 
     [HttpPost("login")]
-    public async Task<ActionResult<AuthResponse>> Login(
-        [FromBody] LoginUserRequest request,
-        [FromServices] LoginUserUseCase useCase,
+    public async Task<AuthResponse> Login(
+        [FromBody] LoginUserCommand command,
         CancellationToken cancellationToken)
     {
-        var response = await useCase.ExecuteAsync(request, cancellationToken);
-        return Ok(response);
+        return await _mediator.Send(command, cancellationToken);
     }
 }

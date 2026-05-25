@@ -4,7 +4,7 @@ namespace Ticketing.Application.Interfaces;
 
 public interface ITicketRepository
 {
-    Task<Ticket?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default);
+    Task<Ticket?> GetByIdAsync(Guid ticketId, CancellationToken cancellationToken = default, bool asNoTracking = false);
 
     Task<IReadOnlyCollection<Ticket>> GetAllAsync(CancellationToken cancellationToken = default);
 

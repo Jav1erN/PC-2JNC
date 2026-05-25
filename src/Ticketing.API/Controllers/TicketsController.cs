@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using Ticketing.API.Extensions;
-using Ticketing.Application.DTOs.Tickets;
-using Ticketing.Application.UseCases.Tickets;
+using Ticketing.Application.TicketUseCases.Commands;
+using Ticketing.Application.TicketUseCases.DTOs;
+using Ticketing.Application.TicketUseCases.Queries;
 
 namespace Ticketing.API.Controllers;
 
@@ -11,54 +13,57 @@ namespace Ticketing.API.Controllers;
 [Authorize]
 public sealed class TicketsController : ControllerBase
 {
+    private readonly IMediator _mediator;
+
+    public TicketsController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyCollection<TicketDto>>> GetAll(
-        [FromServices] GetAllTicketsUseCase useCase,
+    public async Task<IReadOnlyCollection<TicketDto>> GetAll(
         CancellationToken cancellationToken)
     {
-        var tickets = await useCase.ExecuteAsync(cancellationToken);
-        return Ok(tickets);
+        return await _mediator.Send(new GetAllTicketsQuery(), cancellationToken);
     }
 
     [HttpGet("{ticketId:guid}")]
-    public async Task<ActionResult<TicketDto>> GetById(
+    public async Task<TicketDto> GetById(
         Guid ticketId,
-        [FromServices] GetTicketByIdUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var ticket = await useCase.ExecuteAsync(ticketId, cancellationToken);
-        return Ok(ticket);
+        return await _mediator.Send(new GetTicketByIdQuery(ticketId), cancellationToken);
     }
 
     [HttpPost]
-    public async Task<ActionResult> Create(
+    public async Task<Guid> Create(
         [FromBody] CreateTicketRequest request,
-        [FromServices] CreateTicketUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var ticketId = await useCase.ExecuteAsync(User.GetUserId(), request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { ticketId }, new { ticketId });
+        var command = new CreateTicketCommand(User.GetUserId(), request.Title, request.Description);
+        return await _mediator.Send(command, cancellationToken);
     }
 
     [HttpPost("{ticketId:guid}/responses")]
-    public async Task<ActionResult> AddResponse(
+    [Authorize(Policy = "SupportOrAdmin")]
+    public async Task<Guid> AddResponse(
         Guid ticketId,
         [FromBody] AddResponseRequest request,
-        [FromServices] AddResponseToTicketUseCase useCase,
         CancellationToken cancellationToken)
     {
-        var responseId = await useCase.ExecuteAsync(ticketId, User.GetUserId(), request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { ticketId }, new { responseId });
+        var command = new AddResponseToTicketCommand(
+            ticketId,
+            User.GetUserId(),
+            request.Message);
+        return await _mediator.Send(command, cancellationToken);
     }
 
     [HttpPatch("{ticketId:guid}/close")]
     [Authorize(Policy = "SupportOrAdmin")]
-    public async Task<IActionResult> Close(
+    public async Task<Unit> Close(
         Guid ticketId,
-        [FromServices] CloseTicketUseCase useCase,
         CancellationToken cancellationToken)
     {
-        await useCase.ExecuteAsync(ticketId, cancellationToken);
-        return NoContent();
+        return await _mediator.Send(new CloseTicketCommand(ticketId), cancellationToken);
     }
 }
